@@ -29,8 +29,13 @@ const RISK_KEYWORDS = [
   { keyword: "自动续约", level: "中", reason: "自动续约条款" },
   { keyword: "违约责任", level: "中", reason: "违约责任" },
   { keyword: "损失赔偿", level: "中", reason: "损失赔偿" },
-  { keyword: "精神损害", level: "高", reason: "精神损害赔偿" },
-  { keyword: "惩罚性赔偿", level: "高", reason: "惩罚性赔偿" },
+  { keyword: "民事责任", level: "中", reason: "民事责任条款" },
+  { keyword: "诉讼时效", level: "低", reason: "诉讼时效规定" },
+  { keyword: "物权", level: "中", reason: "物权相关条款" },
+  { keyword: "合同效力", level: "高", reason: "合同效力问题" },
+  { keyword: "意思表示", level: "中", reason: "意思表示条款" },
+  { keyword: "代理", level: "中", reason: "代理关系" },
+  { keyword: "期间计算", level: "低", reason: "期间计算规则" },
 ];
 
 export async function POST(req: NextRequest) {
@@ -54,7 +59,7 @@ export async function POST(req: NextRequest) {
   const mediumRiskCount = findings.filter((f) => f.level === "中").length;
 
   const report = `
-📊 合同风险分析报告：
+📊 合同风险分析报告（参考《中华人民共和国民法典》）：
 
 - 高风险条款：${highRiskCount} 条
 - 中风险条款：${mediumRiskCount} 条
@@ -66,6 +71,11 @@ ${findings
       (f) => `- [${f.level.toUpperCase()}] ${f.keyword}：${f.reason}\n  上下文：${f.context}`
     )
     .join("\n\n")}
+
+📖 法律参考：
+- 请对照《中华人民共和国民法典》相关条款检查合同合规性
+- 重点关注民事法律行为效力、合同订立与履行、违约责任等章节
+- 建议咨询专业律师进行全面审查
   `;
 
   return NextResponse.json({ report });

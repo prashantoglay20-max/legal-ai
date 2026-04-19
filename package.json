@@ -11,6 +11,7 @@
   "dependencies": {
     "html-to-pdf": "^0.1.11",
     "jspdf": "^4.2.1",
+    "mammoth": "^1.12.0",
     "next": "16.2.4",
     "pdf-parse": "^2.4.5",
     "react": "19.2.4",
