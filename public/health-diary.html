@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康日记 - 饮食运动体重记录</title>
+    <!-- 引入 Chart.js 用于绘制图表 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #4CAF50; --danger: #f44336; --bg: #f4f6f8; --card: #ffffff; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1000px; margin: auto; }
+        h1 { text-align: center; color: #2c3e50; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .card h2 { margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        input, select, button { width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { opacity: 0.9; }
+        .delete-btn { background: var(--danger); margin-top: 5px; padding: 5px; font-size: 12px; }
+        ul { list-style: none; padding: 0; max-height: 200px; overflow-y: auto; }
+        li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .chart-container { margin-top: 30px; }
+        .food-suggestions { position: absolute; background: white; border: 1px solid #ddd; border-radius: 6px; max-height: 150px; overflow-y: auto; width: calc(100% - 20px); z-index: 10; display: none; }
+        .food-suggestions div { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+        .food-suggestions div:hover { background: #f5f5f5; }
+        .food-input-wrapper { position: relative; }
+        .meal-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .meal-tab { flex: 1; padding: 8px; border: 2px solid #ddd; border-radius: 6px; text-align: center; cursor: pointer; background: white; font-weight: bold; transition: 0.3s; }
+        .meal-tab.active { border-color: var(--primary); background: var(--primary); color: white; }
+        .meal-section { display: none; }
+        .meal-section.active { display: block; }
+        .meal-total { background: #f0f0f0; padding: 10px; border-radius: 6px; margin-top: 10px; text-align: center; font-weight: bold; color: #2c3e50; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📔 每日健康日记</h1>
+    
+    <div class="grid">
+        <!-- 饮食记录 -->
+        <div class="card">
+            <h2>🍽️ 饮食记录</h2>
+            
+            <!-- 餐次选择 -->
+            <div class="meal-tabs">
+                <div class="meal-tab active" onclick="switchMeal('breakfast')">🌅 早餐</div>
+                <div class="meal-tab" onclick="switchMeal('lunch')">🌞 中餐</div>
+                <div class="meal-tab" onclick="switchMeal('dinner')">🌙 晚餐</div>
+            </div>
+
+            <!-- 早餐 -->
+            <div class="meal-section active" id="breakfast-section">
+                <div class="food-input-wrapper">
+                    <input type="text" id="foodName-breakfast" placeholder="食物名称" autocomplete="off">
+                    <div class="food-suggestions" id="foodSuggestions-breakfast"></div>
+                </div>
+                <input type="number" id="foodCalories-breakfast" placeholder="热量 (kcal)">
+                <button onclick="addFood('breakfast')">添加早餐</button>
+                <ul id="foodList-breakfast"></ul>
+                <div class="meal-total" id="breakfast-total">早餐合计: 0 kcal</div>
+            </div>
+
+            <!-- 中餐 -->
+            <div class="meal-section" id="lunch-section">
+                <div class="food-input-wrapper">
+                    <input type="text" id="foodName-lunch" placeholder="食物名称" autocomplete="off">
+                    <div class="food-suggestions" id="foodSuggestions-lunch"></div>
+                </div>
+                <input type="number" id="foodCalories-lunch" placeholder="热量 (kcal)">
+                <button onclick="addFood('lunch')">添加中餐</button>
+                <ul id="foodList-lunch"></ul>
+                <div class="meal-total" id="lunch-total">中餐合计: 0 kcal</div>
+            </div>
+
+            <!-- 晚餐 -->
+            <div class="meal-section" id="dinner-section">
+                <div class="food-input-wrapper">
+                    <input type="text" id="foodName-dinner" placeholder="食物名称" autocomplete="off">
+                    <div class="food-suggestions" id="foodSuggestions-dinner"></div>
+                </div>
+                <input type="number" id="foodCalories-dinner" placeholder="热量 (kcal)">
+                <button onclick="addFood('dinner')">添加晚餐</button>
+                <ul id="foodList-dinner"></ul>
+                <div class="meal-total" id="dinner-total">晚餐合计: 0 kcal</div>
+            </div>
+
+            <!-- 每日总计 -->
+            <div class="meal-total" style="margin-top: 15px; background: var(--primary); color: white;">📊 每日饮食合计: <span id="daily-total">0</span> kcal</div>
+        </div>
+
+        <!-- 运动记录 -->
+        <div class="card">
+            <h2>🏃 运动记录</h2>
+            <input type="text" id="exerciseName" placeholder="运动项目 (如: 跑步)">
+            <input type="number" id="exerciseCalories" placeholder="消耗热量 (kcal)">
+            <button onclick="addExercise()">添加运动</button>
+            <ul id="exerciseList"></ul>
+        </div>
+
+        <!-- 体重记录 -->
+        <div class="card">
+            <h2>⚖️ 体重记录</h2>
+            <input type="number" id="weightInput" placeholder="今日体重 (kg)">
+            <button onclick="addWeight()">记录体重</button>
+            <p id="bmiResult" style="text-align: center; font-weight: bold;"></p>
+        </div>
+    </div>
+
+    <!-- 图表展示 -->
+    <div class="card chart-container">
+        <h2>📈 体重变化趋势</h2>
+        <canvas id="weightChart"></canvas>
+    </div>
+</div>
+
+<script>
+    // 食物卡路里数据库
+    const foodDatabase = {
+        '鸡胸肉': 165,
+        '鸡蛋': 155,
+        '牛奶': 61,
+        '面条': 138,
+        '米饭': 130,
+        '面包': 265,
+        '苹果': 52,
+        '香蕉': 89,
+        '橙子': 47,
+        '葡萄': 67,
+        '草莓': 32,
+        '西瓜': 30,
+        '西兰花': 34,
+        '胡萝卜': 41,
+        '番茄': 18,
+        '黄瓜': 16,
+        '洋葱': 40,
+        '生菜': 15,
+        '土豆': 77,
+        '红薯': 86,
+        '豆腐': 76,
+        '鱼': 206,
+        '猪肉': 242,
+        '牛肉': 250,
+        '羊肉': 203,
+        '大豆': 446,
+        '花生': 567,
+        '坚果': 600,
+        '黄油': 717,
+        '油': 884,
+        '蜂蜜': 304,
+        '糖': 387,
+        '盐': 0,
+        '咖啡': 0,
+        '茶': 0,
+        '牛奶咖啡': 120,
+        '果汁': 43,
+        '可乐': 42,
+        '啤酒': 43,
+        '红酒': 82,
+        '豆浆': 54,
+        '酸奶': 100,
+        '奶酪': 402,
+        '黑巧克力': 539,
+        '牛奶巧克力': 535,
+        '饼干': 430,
+        '薯片': 536,
+        '爆米花': 386,
+        '披萨': 285,
+        '汉堡': 354,
+        '炸鸡': 320,
+        '麻辣烫': 150,
+        '火锅': 200,
+    };
+
+    // 获取今天日期作为键值
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 当前选中的餐次
+    let currentMeal = 'breakfast';
+    
+    // 初始化数据结构
+    let data = JSON.parse(localStorage.getItem('healthData')) || {};
+    if (!data[today]) {
+        data[today] = { 
+            meals: { breakfast: [], lunch: [], dinner: [] }, 
+            exercises: [], 
+            weight: null 
+        };
+    } else if (!data[today].meals) {
+        // 兼容旧数据结构的迁移
+        const oldFoods = data[today].foods || [];
+        data[today].meals = { 
+            breakfast: oldFoods, 
+            lunch: [], 
+            dinner: [] 
+        };
+        delete data[today].foods;
+    }
+    
+    // 切换餐次
+    function switchMeal(meal) {
+        currentMeal = meal;
+        
+        // 更新标签活跃状态
+        document.querySelectorAll('.meal-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        
+        // 显示对应的餐次区域
+        document.querySelectorAll('.meal-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        document.getElementById(meal + '-section').classList.add('active');
+    }
+
+    // 食物建议功能 - 为每个餐次设置
+    ['breakfast', 'lunch', 'dinner'].forEach(meal => {
+        const foodInput = document.getElementById('foodName-' + meal);
+        if (foodInput) {
+            foodInput.addEventListener('input', function(e) {
+                const input = this.value.toLowerCase().trim();
+                const suggestionsContainer = document.getElementById('foodSuggestions-' + meal);
+                
+                if (input.length === 0) {
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+
+                const matches = Object.keys(foodDatabase).filter(food => 
+                    food.toLowerCase().includes(input)
+                );
+
+                if (matches.length > 0) {
+                    suggestionsContainer.innerHTML = matches.map(food => 
+                        `<div onclick="selectFood('${meal}', '${food}')">${food} (${foodDatabase[food]} kcal)</div>`
+                    ).join('');
+                    suggestionsContainer.style.display = 'block';
+                } else {
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+        }
+    });
+
+    // 选择食物建议
+    function selectFood(meal, foodName) {
+        document.getElementById('foodName-' + meal).value = foodName;
+        document.getElementById('foodCalories-' + meal).value = foodDatabase[foodName];
+        document.getElementById('foodSuggestions-' + meal).style.display = 'none';
+    }
+
+    // 点击外部关闭建议
+    document.addEventListener('click', function(e) {
+        const isWrapper = e.target.closest('.food-input-wrapper');
+        if (!isWrapper) {
+            document.querySelectorAll('.food-suggestions').forEach(s => {
+                s.style.display = 'none';
+            });
+        }
+    });
+
+    // 渲染列表
+    function renderList() {
+        const todayData = data[today];
+        
+        // 渲染每个餐次
+        const mealNames = { 
+            breakfast: '早餐', 
+            lunch: '中餐', 
+            dinner: '晚餐' 
+        };
+        
+        let dailyTotal = 0;
+        
+        ['breakfast', 'lunch', 'dinner'].forEach(meal => {
+            const foodList = document.getElementById('foodList-' + meal);
+            const meals = todayData.meals[meal] || [];
+            
+            foodList.innerHTML = meals.map((f, i) => 
+                `<li><span>${f.name}</span> <span>${f.calories} kcal <button class="delete-btn" onclick="deleteFood('${meal}', ${i})">删除</button></span></li>`
+            ).join('');
+            
+            // 计算该餐次的卡路里总计
+            const mealTotal = meals.reduce((sum, f) => sum + parseInt(f.calories), 0);
+            document.getElementById(meal + '-total').innerText = mealNames[meal] + '合计: ' + mealTotal + ' kcal';
+            
+            // 累加到每日总计
+            dailyTotal += mealTotal;
+        });
+        
+        // 显示每日总计
+        document.getElementById('daily-total').innerText = dailyTotal;
+
+        // 渲染运动
+        const exerciseList = document.getElementById('exerciseList');
+        exerciseList.innerHTML = todayData.exercises.map((e, i) => 
+            `<li><span>${e.name}</span> <span>${e.calories} kcal <button class="delete-btn" onclick="deleteExercise(${i})">删除</button></span></li>`
+        ).join('');
+
+        // 渲染体重及BMI
+        const weightInput = document.getElementById('weightInput');
+        const bmiResult = document.getElementById('bmiResult');
+        if (todayData.weight) {
+            weightInput.value = todayData.weight;
+            const height = 1.75;
+            const bmi = (todayData.weight / (height * height)).toFixed(1);
+            bmiResult.innerText = `当前体重: ${todayData.weight} kg | BMI: ${bmi}`;
+        }
+        
+        saveData();
+        updateChart();
+    }
+
+    // 添加饮食
+    function addFood(meal) {
+        const name = document.getElementById('foodName-' + meal).value;
+        const calories = document.getElementById('foodCalories-' + meal).value;
+        if(!name || !calories) return;
+        data[today].meals[meal].push({ name, calories: parseInt(calories) });
+        renderList();
+        document.getElementById('foodName-' + meal).value = '';
+        document.getElementById('foodCalories-' + meal).value = '';
+    }
+
+    // 添加运动
+    function addExercise() {
+        const name = document.getElementById('exerciseName').value;
+        const calories = document.getElementById('exerciseCalories').value;
+        if(!name || !calories) return;
+        data[today].exercises.push({ name, calories: parseInt(calories) });
+        renderList();
+        document.getElementById('exerciseName').value = '';
+        document.getElementById('exerciseCalories').value = '';
+    }
+
+    // 记录体重
+    function addWeight() {
+        const weight = document.getElementById('weightInput').value;
+        if(!weight) return;
+        data[today].weight = parseFloat(weight);
+        renderList();
+    }
+
+    // 删除食物
+    function deleteFood(meal, index) {
+        data[today].meals[meal].splice(index, 1);
+        renderList();
+    }
+
+    // 删除运动
+    function deleteExercise(index) {
+        data[today].exercises.splice(index, 1);
+        renderList();
+    }
+
+    // 保存到 localStorage
+    function saveData() {
+        localStorage.setItem('healthData', JSON.stringify(data));
+    }
+
+    // 绘制图表
+    let myChart = null;
+    function updateChart() {
+        const dates = Object.keys(data).sort();
+        const weights = dates.map(d => data[d].weight);
+        
+        const ctx = document.getElementById('weightChart').getContext('2d');
+        
+        if (myChart) myChart.destroy(); // 销毁旧图表防止重叠
+        
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: '体重 (kg)',
+                    data: weights,
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: false } }
+            }
+        });
+    }
+
+    // 初始加载
+    renderList();
+</script>
+
+</body>
+</html>

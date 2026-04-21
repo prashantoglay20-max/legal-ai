@@ -74,7 +74,19 @@ export default function Home() {
 
   return (
     <main className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">合同风险审查助手</h1>
+      {/* 导航栏 */}
+      <div className="mb-8 pb-6 border-b border-gray-300">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">合同风险审查助手</h1>
+          <a
+            href="/health-diary"
+            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors"
+          >
+            📔 健康日记
+          </a>
+        </div>
+        <p className="text-gray-600 mt-2">专业的智能合同分析与风险评估平台</p>
+      </div>
 
       <FileUploader
         key={resetKey}
